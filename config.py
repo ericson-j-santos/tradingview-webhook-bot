@@ -6,7 +6,7 @@
 
 # TradingView Example Alert Message:
 # {
-# "key":"9T2q394M92", "telegram":"-1001298977502", "discord":"789842349670960670/BFeBBrCt-w2Z9RJ2wlH6TWUjM5bJuC29aJaJ5OQv9sE6zCKY_AlOxxFwRURkgEl852s3", "slack":"T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX", "teams":"https://outlook.office.com/webhook/...", "msg":"Long #{{ticker}} at `{{close}}`"
+# "key":"9T2q394M92", "telegram":"-1001298977502", "discord":"789842349670960670/BFeBBrCt-w2Z9RJ2wlH6TWUjM5bJuC29aJaJ5OQv9sE6zCKY_AlOxxFwRURkgEl852s3", "slack":"T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX", "teams":"https://outlook.office.com/webhook/...", "teams_to":"user@example.com", "correlation_id":"trade-123", "msg":"Long #{{ticker}} at `{{close}}`"
 # }
 
 sec_key = (
@@ -29,6 +29,11 @@ slack_webhook = ""  # Slack Webhook URL (https://api.slack.com/messaging/webhook
 # Microsoft Teams Settings
 send_teams_alerts = False
 teams_webhook = ""  # Microsoft Teams Webhook URL (https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook)
+
+# Microsoft Teams API Settings (for individual chat with Adaptive Cards)
+send_teams_api_alerts = False
+teams_api_endpoint = "https://graph.microsoft.com/v1.0/chats/{chat-id}/messages"  # Teams Graph API endpoint
+teams_access_token = ""  # Microsoft Teams access token for Graph API
 
 # Twitter Settings
 send_twitter_alerts = False
