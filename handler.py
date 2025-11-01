@@ -94,6 +94,19 @@ def send_alert(data):
             correlation_id = data.get("correlation_id", "")
             
             if teams_to and config.teams_access_token:
+                # Validate that the configured endpoint is a Microsoft Graph API endpoint
+                # to prevent SSRF attacks
+                if not config.teams_api_endpoint.startswith("https://graph.microsoft.com/"):
+                    print("[X] Teams API Error: Invalid endpoint. Must be a Microsoft Graph API URL.")
+                    return
+                
+                # Sanitize the teams_to value to prevent URL manipulation
+                # Only allow alphanumeric, @, ., -, and _ characters
+                import re
+                if not re.match(r'^[a-zA-Z0-9@.\-_]+$', teams_to):
+                    print(f"[X] Teams API Error: Invalid teams_to format: {teams_to}")
+                    return
+                
                 # Create Adaptive Card payload
                 adaptive_card = {
                     "type": "AdaptiveCard",
