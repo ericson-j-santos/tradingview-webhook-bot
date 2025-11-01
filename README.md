@@ -36,6 +36,7 @@ All alerts can be instantly sent to Telegram, Discord, Twitter and/or Email.
 - Microsoft Teams Support using [webhooks](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook).
 - Twitter Support using the [tweepy](https://github.com/tweepy/tweepy) libary.
 - Email Support using [smtplib](https://docs.python.org/3/library/smtplib.html).
+- **Telemetry and Observability** using [OpenTelemetry](https://opentelemetry.io/) for distributed tracing and monitoring.
 - Alert channels can be enabled or disabled in [`config.py`](https://github.com/fabston/TradingView-Webhook-Bot/blob/master/config.py).
 - Dynamically send alerts to different Telegram, Discord, Slack, and/or Teams channels.
 - TradingView `{{close}}`, `{{exchange}}` etc. variables support. Read more [here](https://www.tradingview.com/blog/en/introducing-variables-in-alerts-14880/).
@@ -90,6 +91,66 @@ All alerts can be instantly sent to Telegram, Discord, Twitter and/or Email.
    }
    ```
 1. Restart NGINX `sudo service nginx restart`
+
+### Telemetry and Observability Setup
+
+The bot now supports distributed tracing and observability using [OpenTelemetry](https://opentelemetry.io/). This allows you to monitor webhook requests, track alert deliveries, and diagnose issues across all channels.
+
+#### Configuration
+
+To enable telemetry, update [`config.py`](https://github.com/fabston/TradingView-Webhook-Bot/blob/master/config.py):
+
+```python
+# Telemetry Settings (OpenTelemetry)
+enable_telemetry = True  # Enable/disable telemetry collection
+telemetry_service_name = "tradingview-webhook-bot"  # Service name for telemetry
+telemetry_endpoint = "http://localhost:4318/v1/traces"  # OTLP endpoint
+```
+
+#### Supported Backends
+
+The telemetry implementation uses the OTLP (OpenTelemetry Protocol) HTTP exporter and works with:
+
+- **Jaeger** - Set endpoint to `http://localhost:4318/v1/traces` (with OTLP collector)
+- **Zipkin** - Compatible via OTLP collector
+- **Azure Application Insights** - Use Azure Monitor OpenTelemetry exporter endpoint
+- **Grafana Tempo** - Set endpoint to your Tempo OTLP endpoint
+- **New Relic** - Set endpoint to New Relic's OTLP endpoint with appropriate headers
+- **Datadog** - Compatible via OTLP collector
+- Any OpenTelemetry-compatible backend
+
+#### Collected Telemetry Data
+
+The telemetry instrumentation captures:
+
+- HTTP request traces for all webhook calls
+- Client IP addresses and authentication results
+- Alert message metadata (channels used, message length)
+- Individual channel delivery status (Telegram, Discord, Slack, Teams, Twitter, Email)
+- Error traces with full exception details
+- HTTP status codes for external service calls
+- Request/response timing for performance analysis
+
+#### Quick Start with Jaeger (Local Testing)
+
+```bash
+# Run Jaeger all-in-one with OTLP support
+docker run -d --name jaeger \
+  -e COLLECTOR_OTLP_ENABLED=true \
+  -p 16686:16686 \
+  -p 4318:4318 \
+  jaegertracing/all-in-one:latest
+
+# Enable telemetry in config.py
+enable_telemetry = True
+telemetry_endpoint = "http://localhost:4318/v1/traces"
+
+# Access Jaeger UI at http://localhost:16686
+```
+
+#### Disabling Telemetry
+
+If you don't need telemetry, simply keep `enable_telemetry = False` in your config. The bot will run normally without any telemetry overhead.
 
 ### Microsoft Teams Webhook Setup
 For detailed instructions on setting up Microsoft Teams webhooks, see [TEAMS_SETUP.md](TEAMS_SETUP.md).

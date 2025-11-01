@@ -34,3 +34,10 @@ tzlocal==2.1
 urllib3==1.26.5
 waitress==2.1.1
 Werkzeug==2.0.1
+
+# OpenTelemetry dependencies for observability
+opentelemetry-api==1.20.0
+opentelemetry-sdk==1.20.0
+opentelemetry-instrumentation-flask==0.41b0
+opentelemetry-instrumentation-requests==0.41b0
+opentelemetry-exporter-otlp-proto-http==1.20.0

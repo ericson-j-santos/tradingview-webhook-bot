@@ -16,103 +16,138 @@ from telegram import Bot
 
 import config
 
+# OpenTelemetry imports
+from opentelemetry import trace
+
+tracer = trace.get_tracer(__name__)
+
 
 def send_alert(data):
     msg = data["msg"].encode("latin-1", "backslashreplace").decode("unicode_escape")
-    if config.send_telegram_alerts:
-        tg_bot = Bot(token=config.tg_token)
-        try:
-            tg_bot.sendMessage(
-                data["telegram"],
-                msg,
-                parse_mode="MARKDOWN",
-            )
-        except KeyError:
-            tg_bot.sendMessage(
-                config.channel,
-                msg,
-                parse_mode="MARKDOWN",
-            )
-        except Exception as e:
-            print("[X] Telegram Error:\n>", e)
+    
+    with tracer.start_as_current_span("send_alert") as span:
+        span.set_attribute("alert.message_length", len(msg))
+        
+        if config.send_telegram_alerts:
+            with tracer.start_as_current_span("send_telegram") as tg_span:
+                tg_bot = Bot(token=config.tg_token)
+                try:
+                    channel = data.get("telegram", config.channel)
+                    tg_span.set_attribute("telegram.channel", str(channel))
+                    tg_bot.sendMessage(
+                        channel,
+                        msg,
+                        parse_mode="MARKDOWN",
+                    )
+                    tg_span.set_attribute("telegram.success", True)
+                except Exception as e:
+                    tg_span.set_attribute("telegram.success", False)
+                    tg_span.set_attribute("error.message", str(e))
+                    tg_span.record_exception(e)
+                    print("[X] Telegram Error:\n>", e)
 
     if config.send_discord_alerts:
-        try:
-            webhook = DiscordWebhook(
-                url="https://discord.com/api/webhooks/" + data["discord"]
-            )
-            embed = DiscordEmbed(title=msg)
-            webhook.add_embed(embed)
-            webhook.execute()
-        except KeyError:
-            webhook = DiscordWebhook(
-                url="https://discord.com/api/webhooks/" + config.discord_webhook
-            )
-            embed = DiscordEmbed(title=msg)
-            webhook.add_embed(embed)
-            webhook.execute()
-        except Exception as e:
-            print("[X] Discord Error:\n>", e)
+        with tracer.start_as_current_span("send_discord") as discord_span:
+            try:
+                webhook_url = data.get("discord", config.discord_webhook)
+                discord_span.set_attribute("discord.webhook_set", bool(webhook_url))
+                
+                webhook = DiscordWebhook(
+                    url="https://discord.com/api/webhooks/" + webhook_url
+                )
+                embed = DiscordEmbed(title=msg)
+                webhook.add_embed(embed)
+                webhook.execute()
+                discord_span.set_attribute("discord.success", True)
+            except Exception as e:
+                discord_span.set_attribute("discord.success", False)
+                discord_span.set_attribute("error.message", str(e))
+                discord_span.record_exception(e)
+                print("[X] Discord Error:\n>", e)
 
     if config.send_slack_alerts:
-        try:
-            slack = Slack(url="https://hooks.slack.com/services/" + data["slack"])
-            slack.post(text=msg)
-        except KeyError:
-            slack = Slack(
-                url="https://hooks.slack.com/services/" + config.slack_webhook
-            )
-            slack.post(text=msg)
-        except Exception as e:
-            print("[X] Slack Error:\n>", e)
+        with tracer.start_as_current_span("send_slack") as slack_span:
+            try:
+                webhook_url = data.get("slack", config.slack_webhook)
+                slack_span.set_attribute("slack.webhook_set", bool(webhook_url))
+                
+                slack = Slack(url="https://hooks.slack.com/services/" + webhook_url)
+                slack.post(text=msg)
+                slack_span.set_attribute("slack.success", True)
+            except Exception as e:
+                slack_span.set_attribute("slack.success", False)
+                slack_span.set_attribute("error.message", str(e))
+                slack_span.record_exception(e)
+                print("[X] Slack Error:\n>", e)
 
     if config.send_teams_alerts:
-        try:
-            # Try to get Teams webhook URL from the alert data
-            teams_url = data.get("teams", config.teams_webhook)
-            if teams_url:
-                # Microsoft Teams expects a JSON payload with a text or card
-                # Using MessageCard format for better formatting
-                teams_payload = {
-                    "@type": "MessageCard",
-                    "@context": "https://schema.org/extensions",
-                    "summary": "Trading Alert",
-                    "themeColor": "0078D7",
-                    "title": "TradingView Alert",
-                    "text": msg.replace("*", "**").replace("`", "")
-                }
-                response = requests.post(teams_url, json=teams_payload)
-                response.raise_for_status()
-        except Exception as e:
-            print("[X] Teams Error:\n>", e)
+        with tracer.start_as_current_span("send_teams") as teams_span:
+            try:
+                # Try to get Teams webhook URL from the alert data
+                teams_url = data.get("teams", config.teams_webhook)
+                teams_span.set_attribute("teams.webhook_set", bool(teams_url))
+                
+                if teams_url:
+                    # Microsoft Teams expects a JSON payload with a text or card
+                    # Using MessageCard format for better formatting
+                    teams_payload = {
+                        "@type": "MessageCard",
+                        "@context": "https://schema.org/extensions",
+                        "summary": "Trading Alert",
+                        "themeColor": "0078D7",
+                        "title": "TradingView Alert",
+                        "text": msg.replace("*", "**").replace("`", "")
+                    }
+                    response = requests.post(teams_url, json=teams_payload)
+                    response.raise_for_status()
+                    teams_span.set_attribute("teams.success", True)
+                    teams_span.set_attribute("teams.status_code", response.status_code)
+            except Exception as e:
+                teams_span.set_attribute("teams.success", False)
+                teams_span.set_attribute("error.message", str(e))
+                teams_span.record_exception(e)
+                print("[X] Teams Error:\n>", e)
 
     if config.send_twitter_alerts:
-        tw_auth = tweepy.OAuthHandler(config.tw_ckey, config.tw_csecret)
-        tw_auth.set_access_token(config.tw_atoken, config.tw_asecret)
-        tw_api = tweepy.API(tw_auth)
-        try:
-            tw_api.update_status(
-                status=msg.replace("*", "").replace("_", "").replace("`", "")
-            )
-        except Exception as e:
-            print("[X] Twitter Error:\n>", e)
+        with tracer.start_as_current_span("send_twitter") as twitter_span:
+            tw_auth = tweepy.OAuthHandler(config.tw_ckey, config.tw_csecret)
+            tw_auth.set_access_token(config.tw_atoken, config.tw_asecret)
+            tw_api = tweepy.API(tw_auth)
+            try:
+                tw_api.update_status(
+                    status=msg.replace("*", "").replace("_", "").replace("`", "")
+                )
+                twitter_span.set_attribute("twitter.success", True)
+            except Exception as e:
+                twitter_span.set_attribute("twitter.success", False)
+                twitter_span.set_attribute("error.message", str(e))
+                twitter_span.record_exception(e)
+                print("[X] Twitter Error:\n>", e)
 
     if config.send_email_alerts:
-        try:
-            email_msg = MIMEText(
-                msg.replace("*", "").replace("_", "").replace("`", "")
-            )
-            email_msg["Subject"] = config.email_subject
-            email_msg["From"] = config.email_sender
-            email_msg["To"] = config.email_sender
-            context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(
-                config.email_host, config.email_port, context=context
-            ) as server:
-                server.login(config.email_user, config.email_password)
-                server.sendmail(
-                    config.email_sender, config.email_receivers, email_msg.as_string()
+        with tracer.start_as_current_span("send_email") as email_span:
+            try:
+                email_msg = MIMEText(
+                    msg.replace("*", "").replace("_", "").replace("`", "")
                 )
-                server.quit()
-        except Exception as e:
-            print("[X] Email Error:\n>", e)
+                email_msg["Subject"] = config.email_subject
+                email_msg["From"] = config.email_sender
+                email_msg["To"] = config.email_sender
+                context = ssl.create_default_context()
+                
+                email_span.set_attribute("email.recipients_count", len(config.email_receivers))
+                
+                with smtplib.SMTP_SSL(
+                    config.email_host, config.email_port, context=context
+                ) as server:
+                    server.login(config.email_user, config.email_password)
+                    server.sendmail(
+                        config.email_sender, config.email_receivers, email_msg.as_string()
+                    )
+                    server.quit()
+                email_span.set_attribute("email.success", True)
+            except Exception as e:
+                email_span.set_attribute("email.success", False)
+                email_span.set_attribute("error.message", str(e))
+                email_span.record_exception(e)
+                print("[X] Email Error:\n>", e)
