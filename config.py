@@ -32,7 +32,8 @@ teams_webhook = ""  # Microsoft Teams Webhook URL (https://docs.microsoft.com/en
 
 # Microsoft Teams API Settings (for individual chat with Adaptive Cards)
 send_teams_api_alerts = False
-teams_api_endpoint = "https://graph.microsoft.com/v1.0/chats/{chat-id}/messages"  # Teams Graph API endpoint
+# Teams Graph API endpoint - use {chat-id} or {user-id} as placeholder which will be replaced by teams_to value from alert
+teams_api_endpoint = "https://graph.microsoft.com/v1.0/chats/{chat-id}/messages"
 teams_access_token = ""  # Microsoft Teams access token for Graph API
 
 # Twitter Settings

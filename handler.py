@@ -4,8 +4,10 @@
 # File Name             : handler.py              #
 # ----------------------------------------------- #
 
+import re
 import smtplib
 import ssl
+import uuid
 from email.mime.text import MIMEText
 
 import requests
@@ -102,10 +104,12 @@ def send_alert(data):
                 
                 # Sanitize the teams_to value to prevent URL manipulation
                 # Only allow alphanumeric, @, ., -, and _ characters
-                import re
                 if not re.match(r'^[a-zA-Z0-9@.\-_]+$', teams_to):
                     print(f"[X] Teams API Error: Invalid teams_to format: {teams_to}")
                     return
+                
+                # Generate a unique attachment ID (use correlation_id if provided, otherwise generate UUID)
+                attachment_id = correlation_id if correlation_id else str(uuid.uuid4())
                 
                 # Create Adaptive Card payload
                 adaptive_card = {
@@ -141,11 +145,11 @@ def send_alert(data):
                 message_payload = {
                     "body": {
                         "contentType": "html",
-                        "content": f"<attachment id=\"{correlation_id}\"></attachment>"
+                        "content": f"<attachment id=\"{attachment_id}\"></attachment>"
                     },
                     "attachments": [
                         {
-                            "id": correlation_id,
+                            "id": attachment_id,
                             "contentType": "application/vnd.microsoft.card.adaptive",
                             "content": adaptive_card
                         }
@@ -158,11 +162,11 @@ def send_alert(data):
                     "Content-Type": "application/json"
                 }
                 
-                # Send to individual chat via Graph API
-                # Note: The endpoint needs to be constructed with the actual chat ID
-                # For sending to a user, we would typically need to create or find a chat first
-                # This is a simplified version - in production, you'd need proper chat resolution
-                api_endpoint = config.teams_api_endpoint.replace("{to}", teams_to)
+                # Construct the API endpoint
+                # The teams_to value is used to replace the placeholder in the configured endpoint
+                # Note: The endpoint should contain a placeholder like {chat-id} or {user-id}
+                # that will be replaced with the teams_to value from the alert
+                api_endpoint = config.teams_api_endpoint.replace("{chat-id}", teams_to).replace("{user-id}", teams_to)
                 
                 response = requests.post(api_endpoint, json=message_payload, headers=headers)
                 response.raise_for_status()
