@@ -53,3 +53,8 @@ email_port = 465  # SMTP SSL Port (ex. 465)
 email_host = ""  # SMTP host (ex. smtp.gmail.com)
 email_user = ""  # SMTP Login credentials
 email_password = ""  # SMTP Login credentials
+
+# Telemetry Settings (OpenTelemetry)
+enable_telemetry = False  # Enable/disable telemetry collection
+telemetry_service_name = "tradingview-webhook-bot"  # Service name for telemetry
+telemetry_endpoint = ""  # OTLP endpoint (ex. http://localhost:4318/v1/traces or Azure Monitor endpoint)
