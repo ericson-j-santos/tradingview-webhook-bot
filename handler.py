@@ -99,14 +99,12 @@ def send_alert(data):
                 # Validate that the configured endpoint is a Microsoft Graph API endpoint
                 # to prevent SSRF attacks
                 if not config.teams_api_endpoint.startswith("https://graph.microsoft.com/"):
-                    print("[X] Teams API Error: Invalid endpoint. Must be a Microsoft Graph API URL.")
-                    return
+                    raise ValueError("Invalid endpoint. Must be a Microsoft Graph API URL.")
                 
                 # Sanitize the teams_to value to prevent URL manipulation
-                # Only allow alphanumeric, @, ., -, and _ characters
+                # Only allow alphanumeric, @, ., -, and _ characters (email addresses and IDs)
                 if not re.match(r'^[a-zA-Z0-9@.\-_]+$', teams_to):
-                    print(f"[X] Teams API Error: Invalid teams_to format: {teams_to}")
-                    return
+                    raise ValueError(f"Invalid teams_to format: {teams_to}")
                 
                 # Generate a unique attachment ID (use correlation_id if provided, otherwise generate UUID)
                 attachment_id = correlation_id if correlation_id else str(uuid.uuid4())
@@ -162,10 +160,9 @@ def send_alert(data):
                     "Content-Type": "application/json"
                 }
                 
-                # Construct the API endpoint
-                # The teams_to value is used to replace the placeholder in the configured endpoint
-                # Note: The endpoint should contain a placeholder like {chat-id} or {user-id}
-                # that will be replaced with the teams_to value from the alert
+                # Construct the API endpoint by replacing placeholders
+                # Support both {chat-id} and {user-id} placeholders for flexibility
+                # Only one should exist in the configured endpoint
                 api_endpoint = config.teams_api_endpoint.replace("{chat-id}", teams_to).replace("{user-id}", teams_to)
                 
                 response = requests.post(api_endpoint, json=message_payload, headers=headers)
