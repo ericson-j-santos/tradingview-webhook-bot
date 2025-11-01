@@ -34,10 +34,12 @@ All alerts can be instantly sent to Telegram, Discord, Twitter and/or Email.
 - Discord Support using [webhooks](https://support.discord.com/hc/de/articles/228383668-Webhooks-verwenden).
 - Slack Support using [webhooks](https://api.slack.com/messaging/webhooks).
 - Microsoft Teams Support using [webhooks](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook).
+- **Microsoft Teams Individual Chat with Adaptive Cards** - Send messages to individual users via Graph API with correlation ID for observability.
 - Twitter Support using the [tweepy](https://github.com/tweepy/tweepy) libary.
 - Email Support using [smtplib](https://docs.python.org/3/library/smtplib.html).
 - Alert channels can be enabled or disabled in [`config.py`](https://github.com/fabston/TradingView-Webhook-Bot/blob/master/config.py).
 - Dynamically send alerts to different Telegram, Discord, Slack, and/or Teams channels.
+- **Correlation ID support** for enhanced observability and tracking of alerts.
 - TradingView `{{close}}`, `{{exchange}}` etc. variables support. Read more [here](https://www.tradingview.com/blog/en/introducing-variables-in-alerts-14880/).
 
 ## Installation
@@ -55,11 +57,15 @@ All alerts can be instantly sent to Telegram, Discord, Twitter and/or Email.
      "discord": "789842341870960670/BFeBBrCt-w2Z9RJ2wlH6TWUjM5bJuC29aJaJ5OQv9sE6zCKY_AlOxxFwRURkgEl852s3",
      "slack": "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
      "teams": "https://outlook.office.com/webhook/YOUR-WEBHOOK-URL",
+     "teams_to": "user@example.com",
+     "correlation_id": "trade-123",
      "msg": "Long *#{{ticker}}* at `{{close}}`"
     }
     ```
     - `key` is mandatory! It has to match with `sec_key` in [`config.py`](https://github.com/fabston/TradingView-Webhook-Bot/blob/master/config.py). It's an extra security measurement to ensure nobody else is executing your alerts
     - `telegram`, `discord`, `slack`, `teams` is optional. If it is not set it will fall back to the config.py settings
+    - `teams_to` is optional. Used for sending to individual Teams chat via Graph API
+    - `correlation_id` is optional. Used for observability and tracking alerts
     - `msg` can be anything. Markdown for [Telegram](https://core.telegram.org/api/entities) and [Discord](https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-) is supported as well
         - TradingViews variables like `{{close}}`, `{{exchange}}` etc. work too. More can be found [here](https://www.tradingview.com/blog/en/introducing-variables-in-alerts-14880/)
     - Your webhook url would be `http://<YOUR-IP>/webhook`

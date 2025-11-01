@@ -4,8 +4,10 @@
 # File Name             : handler.py              #
 # ----------------------------------------------- #
 
+import re
 import smtplib
 import ssl
+import uuid
 from email.mime.text import MIMEText
 
 import requests
@@ -85,6 +87,94 @@ def send_alert(data):
                 response.raise_for_status()
         except Exception as e:
             print("[X] Teams Error:\n>", e)
+
+    # Microsoft Teams API - Send individual chat with Adaptive Card
+    if config.send_teams_api_alerts:
+        try:
+            # Get recipient from alert data or use a default
+            teams_to = data.get("teams_to")
+            correlation_id = data.get("correlation_id", "")
+            
+            if teams_to and config.teams_access_token:
+                # Validate that the configured endpoint is a Microsoft Graph API endpoint
+                # to prevent SSRF attacks
+                if not config.teams_api_endpoint.startswith("https://graph.microsoft.com/"):
+                    raise ValueError("Invalid endpoint. Must be a Microsoft Graph API URL.")
+                
+                # Sanitize the teams_to value to prevent URL manipulation
+                # Only allow alphanumeric, @, ., -, and _ characters (email addresses and IDs)
+                if not re.match(r'^[a-zA-Z0-9@.\-_]+$', teams_to):
+                    raise ValueError(f"Invalid teams_to format: {teams_to}")
+                
+                # Generate a unique attachment ID (use correlation_id if provided, otherwise generate UUID)
+                attachment_id = correlation_id if correlation_id else str(uuid.uuid4())
+                
+                # Create Adaptive Card payload
+                adaptive_card = {
+                    "type": "AdaptiveCard",
+                    "body": [
+                        {
+                            "type": "TextBlock",
+                            "size": "Medium",
+                            "weight": "Bolder",
+                            "text": "TradingView Alert"
+                        },
+                        {
+                            "type": "TextBlock",
+                            "text": msg,
+                            "wrap": True
+                        }
+                    ],
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "version": "1.4"
+                }
+                
+                # Add correlation_id to card if provided
+                if correlation_id:
+                    adaptive_card["body"].append({
+                        "type": "TextBlock",
+                        "text": f"Correlation ID: {correlation_id}",
+                        "size": "Small",
+                        "isSubtle": True,
+                        "wrap": True
+                    })
+                
+                # Prepare the message payload
+                message_payload = {
+                    "body": {
+                        "contentType": "html",
+                        "content": f"<attachment id=\"{attachment_id}\"></attachment>"
+                    },
+                    "attachments": [
+                        {
+                            "id": attachment_id,
+                            "contentType": "application/vnd.microsoft.card.adaptive",
+                            "content": adaptive_card
+                        }
+                    ]
+                }
+                
+                # Headers for Graph API
+                headers = {
+                    "Authorization": f"Bearer {config.teams_access_token}",
+                    "Content-Type": "application/json"
+                }
+                
+                # Construct the API endpoint by replacing placeholders
+                # Support both {chat-id} and {user-id} placeholders for flexibility
+                # Only one should exist in the configured endpoint
+                api_endpoint = config.teams_api_endpoint.replace("{chat-id}", teams_to).replace("{user-id}", teams_to)
+                
+                response = requests.post(api_endpoint, json=message_payload, headers=headers)
+                response.raise_for_status()
+                
+                if correlation_id:
+                    print(f"[✓] Teams API message sent successfully. Correlation ID: {correlation_id}")
+                else:
+                    print("[✓] Teams API message sent successfully.")
+                    
+        except Exception as e:
+            print("[X] Teams API Error:\n>", e)
 
     if config.send_twitter_alerts:
         tw_auth = tweepy.OAuthHandler(config.tw_ckey, config.tw_csecret)
