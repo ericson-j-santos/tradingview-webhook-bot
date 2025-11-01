@@ -8,6 +8,7 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 
+import requests
 import tweepy
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from slack_webhook import Slack
@@ -64,6 +65,26 @@ def send_alert(data):
             slack.post(text=msg)
         except Exception as e:
             print("[X] Slack Error:\n>", e)
+
+    if config.send_teams_alerts:
+        try:
+            # Try to get Teams webhook URL from the alert data
+            teams_url = data.get("teams", config.teams_webhook)
+            if teams_url:
+                # Microsoft Teams expects a JSON payload with a text or card
+                # Using MessageCard format for better formatting
+                teams_payload = {
+                    "@type": "MessageCard",
+                    "@context": "https://schema.org/extensions",
+                    "summary": "Trading Alert",
+                    "themeColor": "0078D7",
+                    "title": "TradingView Alert",
+                    "text": msg.replace("*", "**").replace("`", "")
+                }
+                response = requests.post(teams_url, json=teams_payload)
+                response.raise_for_status()
+        except Exception as e:
+            print("[X] Teams Error:\n>", e)
 
     if config.send_twitter_alerts:
         tw_auth = tweepy.OAuthHandler(config.tw_ckey, config.tw_csecret)
