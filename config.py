@@ -6,7 +6,7 @@
 
 # TradingView Example Alert Message:
 # {
-# "key":"9T2q394M92", "telegram":"-1001298977502", "discord":"789842349670960670/BFeBBrCt-w2Z9RJ2wlH6TWUjM5bJuC29aJaJ5OQv9sE6zCKY_AlOxxFwRURkgEl852s3", "msg":"Long #{{ticker}} at `{{close}}`"
+# "key":"9T2q394M92", "telegram":"-1001298977502", "discord":"789842349670960670/BFeBBrCt-w2Z9RJ2wlH6TWUjM5bJuC29aJaJ5OQv9sE6zCKY_AlOxxFwRURkgEl852s3", "slack":"T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX", "teams":"https://outlook.office.com/webhook/...", "msg":"Long #{{ticker}} at `{{close}}`"
 # }
 
 sec_key = (
@@ -25,6 +25,10 @@ discord_webhook = ""  # Discord Webhook URL (https://support.discordapp.com/hc/d
 # Slack Settings
 send_slack_alerts = False
 slack_webhook = ""  # Slack Webhook URL (https://api.slack.com/messaging/webhooks)
+
+# Microsoft Teams Settings
+send_teams_alerts = False
+teams_webhook = ""  # Microsoft Teams Webhook URL (https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook)
 
 # Twitter Settings
 send_twitter_alerts = False

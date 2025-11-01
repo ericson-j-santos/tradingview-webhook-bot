@@ -33,10 +33,11 @@ All alerts can be instantly sent to Telegram, Discord, Twitter and/or Email.
 - Telegram Support using the [Python Telegram](https://github.com/python-telegram-bot/python-telegram-bot) libary.
 - Discord Support using [webhooks](https://support.discord.com/hc/de/articles/228383668-Webhooks-verwenden).
 - Slack Support using [webhooks](https://api.slack.com/messaging/webhooks).
+- Microsoft Teams Support using [webhooks](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook).
 - Twitter Support using the [tweepy](https://github.com/tweepy/tweepy) libary.
 - Email Support using [smtplib](https://docs.python.org/3/library/smtplib.html).
 - Alert channels can be enabled or disabled in [`config.py`](https://github.com/fabston/TradingView-Webhook-Bot/blob/master/config.py).
-- Dynamically send alerts to different Telegram and/or Discord channels.
+- Dynamically send alerts to different Telegram, Discord, Slack, and/or Teams channels.
 - TradingView `{{close}}`, `{{exchange}}` etc. variables support. Read more [here](https://www.tradingview.com/blog/en/introducing-variables-in-alerts-14880/).
 
 ## Installation
@@ -53,11 +54,12 @@ All alerts can be instantly sent to Telegram, Discord, Twitter and/or Email.
      "telegram": "-1001277977502",
      "discord": "789842341870960670/BFeBBrCt-w2Z9RJ2wlH6TWUjM5bJuC29aJaJ5OQv9sE6zCKY_AlOxxFwRURkgEl852s3",
      "slack": "T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
+     "teams": "https://outlook.office.com/webhook/YOUR-WEBHOOK-URL",
      "msg": "Long *#{{ticker}}* at `{{close}}`"
     }
     ```
     - `key` is mandatory! It has to match with `sec_key` in [`config.py`](https://github.com/fabston/TradingView-Webhook-Bot/blob/master/config.py). It's an extra security measurement to ensure nobody else is executing your alerts
-    - `telegram`, `discord`, `slack` is optional. If it is not set it will fall back to the config.py settings
+    - `telegram`, `discord`, `slack`, `teams` is optional. If it is not set it will fall back to the config.py settings
     - `msg` can be anything. Markdown for [Telegram](https://core.telegram.org/api/entities) and [Discord](https://support.discord.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-) is supported as well
         - TradingViews variables like `{{close}}`, `{{exchange}}` etc. work too. More can be found [here](https://www.tradingview.com/blog/en/introducing-variables-in-alerts-14880/)
     - Your webhook url would be `http://<YOUR-IP>/webhook`
@@ -88,6 +90,9 @@ All alerts can be instantly sent to Telegram, Discord, Twitter and/or Email.
    }
    ```
 1. Restart NGINX `sudo service nginx restart`
+
+### Microsoft Teams Webhook Setup
+For detailed instructions on setting up Microsoft Teams webhooks, see [TEAMS_SETUP.md](TEAMS_SETUP.md).
 
 ### Docker
 1. Clone this repository `git clone https://github.com/fabston/TradingView-Webhook-Bot.git`
